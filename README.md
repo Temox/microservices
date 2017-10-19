@@ -18,7 +18,6 @@
 ```
 Выгруженный [образ](https://hub.docker.com/r/temox/otus-reddit)
 
-
 ### Разделение приложения на компоненты
 Создание работающего приложения состоящего из нескольких контейнеров, связанных между собой по средствам Docker-сети.
 
@@ -53,5 +52,3 @@ docker run -d --network=reddit --network-alias=reddit_comment --env COMMENT_DATA
 docker run -d --network=reddit -p 9292:9292 --env POST_SERVICE_HOST=reddit_post --env COMMENT_SERVICE_HOST=reddit_comment temox/ui:1.0
 ```
 Для уменьшения объема получаемых образов, в качестве основных образов можем использовать "чистые" образы, такие как _ubuntu:16.04_ или _alpine linux_
-
-
