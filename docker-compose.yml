@@ -1,8 +1,9 @@
 version: '3.3'
 services:
-
+  env_file:
+    - docker-compose.env
   mongo_db:
-    image: mongo:3.2
+    image: ${DBIMAGE} 
     volumes:
       - post_db:/data/db
     networks:
@@ -12,7 +13,7 @@ services:
           - comment_db
   ui:
     build: ./ui
-    image: ${USERNAME}/${UI_BUILD}
+    image: temox/ui:${UI_BUILD}
     ports:
       - ${WEB_PORT}:${WEB_PORT}/tcp
     networks:
@@ -20,12 +21,12 @@ services:
       - back_net
   post:
     build: ./post-py
-    image: ${USERNAME}/${POST_BUILD}
+    image: temox/post:${UI_BUILD}
     networks:
       - back_net
   comment:
     build: ./comment
-    image: ${USERNAME}/${COMMENT_BUILD}
+    image: temox/comment:${UI_BUILD} 
     networks:
       - back_net
 volumes:
