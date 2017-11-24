@@ -90,3 +90,50 @@ docker run -d --network=reddit -p 9292:9292 --env POST_SERVICE_HOST=reddit_post 
  Позволяет создавать docker-контейнере на основе описания.
  Описание инфраструктуры помещается в файл _docker-compose.yml_.
  В самом файле допускается применение переменных окружения _{VARIABLE}_
+ 
+ ## Системы мониторинга. Prometheus.
+
+Запуск _Prometheus_ с помощью _Docker_:
+`docker run --rm -p 9090:9090 -d --name prometheus prom/prometheus`
+
+*Метрика* - собираемая информация. Формируются следующим образом:
+
+`prometheus_build_info{branch="HEAD",goversion="go1.9.1",instance="localhost: 9090",job="prometheus",revision="3a7c51ab70fc7615cd318204d3aa7c078b7c5b20",version="1.8.1"} 1`
+
+`название метрики{лэйбл="значение",лэйбл="значение",лэйбл="значение"} значение метрики`
+
+*Target* - системы и процессы, за которыми следит _Prometheus_
+*Endpoint* - адреса по которым обращаются _Target'ы_
+
+### Конфигурация Prometheus
+
+Файл конфигурации:
+```
+prometheus/
+└── prometheus.yml
+```
+
+где,
+
+scrape_interval - чачтота сбора метрик
+job_name - имя джоба, группы enpoint'ов с одинаковыми функциями
+targets - адреса для сбора метрик
+
+### Exporters
+
+Exporter - интерфейс для конвертации метрик в формат доступный для _Prometheus_
+
+Для сбора статистики с docker-хоста используется node-exporter. Запускается отдельным контейнером _node-exporter_.
+В конфигурацию _Prometheus_ добавляется дополнительный джоб _node_.
+
+Конткйнеры опубликованы в docker-hub:
+
+[temox/ui](https://hub.docker.com/r/temox/ui/)
+
+[temox/comment](https://hub.docker.com/r/temox/comment/)
+
+[temox/post](https://hub.docker.com/r/temox/post/)
+
+[temox/prometheus](https://hub.docker.com/r/temox/prometheus/)
+
+
