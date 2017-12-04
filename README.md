@@ -53,7 +53,6 @@ docker run -d --network=reddit -p 9292:9292 --env POST_SERVICE_HOST=reddit_post 
 ```
 Для уменьшения объема получаемых образов, в качестве основных образов можем использовать "чистые" образы, такие как _ubuntu:16.04_ или _alpine linux_
 
-
 ### Сети и Docker-Compose
 
 * *None* network driver
