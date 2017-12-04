@@ -1,0 +1,42 @@
+version: '3.3'
+services:
+  
+  mongo_db:
+    image: ${DBIMAGE} 
+    volumes:
+      - post_db:/data/db
+    networks:
+      back_net:
+        aliases:
+          - post_db
+          - comment_db
+  ui:
+    build: ./ui
+    image: temox/ui:${UI_BUILD}
+    ports:
+      - ${WEB_PORT}:${WEB_PORT}/tcp
+    networks:
+      - front_net
+      - back_net
+  post:
+    build: ./post-py
+    image: temox/post:${UI_BUILD}
+    networks:
+      - back_net
+  comment:
+    build: ./comment
+    image: temox/comment:${UI_BUILD} 
+    networks:
+      - back_net
+volumes:
+  post_db:
+
+networks:
+  front_net:
+    ipam:
+      config:
+        - subnet: 10.0.1.0/24
+  back_net:
+    ipam:
+      config:
+        - subnet: 10.0.2.0/24
