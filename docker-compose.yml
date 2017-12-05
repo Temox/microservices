@@ -10,24 +10,56 @@ services:
         aliases:
           - post_db
           - comment_db
+
   ui:
     build: ./ui
-    image: temox/ui:${UI_BUILD}
+    image: ${USERNAME}/ui:${BUILD}
     ports:
-      - ${WEB_PORT}:${WEB_PORT}/tcp
+      - 9292:9292/tcp
     networks:
       - front_net
       - back_net
+
   post:
     build: ./post-py
-    image: temox/post:${UI_BUILD}
+    image: ${USERNAME}/post:${BUILD}
     networks:
-      - back_net
+      back_net:
+        aliases:
+          - reddit_post
+
   comment:
     build: ./comment
-    image: temox/comment:${UI_BUILD} 
+    image: ${USERNAME}/comment:${BUILD}
+    networks:
+      back_net:
+        aliases:
+          - reddit_comment
+
+  prometheus:
+    image: ${USERNAME}/prometheus
+    ports:
+      - '9090:9090'
     networks:
       - back_net
+      - front_net
+
+  node-exporter:
+    image: prom/node-exporter:v0.15.0
+    user: root
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
+    networks:
+      back_net:
+        aliases:
+          - node-exporter
+
 volumes:
   post_db:
 
