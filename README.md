@@ -88,6 +88,7 @@ docker run -d --network=reddit -p 9292:9292 --env POST_SERVICE_HOST=reddit_post 
  #### Docker-compose
  Позволяет создавать docker-контейнере на основе описания.
  Описание инфраструктуры помещается в файл _docker-compose.yml_.
+
  В самом файле допускается применение переменных окружения _{VARIABLE}_
  
  ## Системы мониторинга. Prometheus.
