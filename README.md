@@ -89,9 +89,9 @@ docker run -d --network=reddit -p 9292:9292 --env POST_SERVICE_HOST=reddit_post 
  Позволяет создавать docker-контейнере на основе описания.
  Описание инфраструктуры помещается в файл _docker-compose.yml_.
 
- В самом файле допускается применение переменных окружения _{VARIABLE}_
- 
- ## Системы мониторинга. Prometheus.
+  В самом файле допускается применение переменных окружения _{VARIABLE}_
+
+## Системы мониторинга. Prometheus.
 
 Запуск _Prometheus_ с помощью _Docker_:
 `docker run --rm -p 9090:9090 -d --name prometheus prom/prometheus`
