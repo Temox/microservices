@@ -3,6 +3,10 @@ services:
   
   mongo_db:
     image: ${DBIMAGE} 
+    deploy:
+      placement:
+        constraints:
+          - node.labels.reliability == high
     volumes:
       - post_db:/data/db
     networks:
@@ -14,6 +18,27 @@ services:
   ui:
     build: ./ui
     image: ${USERNAME}/ui:${BUILD}
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+        delay: 3s
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 150M
+      update_config:
+        delay: 5s
+        parallelism: 2
+        failure_action: rollback
+      mode: replicated
+      replicas: 3
+      placement:
+        constraints:
+          - node.role == worker
+    environment:
+      - ENV=DEV
+
     ports:
       - 9292:9292/tcp
     networks:
@@ -23,6 +48,25 @@ services:
   post:
     build: ./post-py
     image: ${USERNAME}/post:${BUILD}
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 10
+        delay: 1s
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 300M
+      update_config:
+        delay: 10s
+        parallelism: 2
+        failure_action: rollback
+      mode: replicated
+      replicas: 3
+      placement:
+        constraints:
+          - node.role == worker
+
     networks:
       back_net:
         aliases:
@@ -31,75 +75,28 @@ services:
   comment:
     build: ./comment
     image: ${USERNAME}/comment:${BUILD}
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 15
+        delay: 1s
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 300M
+      update_config:
+        delay: 10s
+        parallelism: 2
+        failure_action: rollback
+      mode: replicated
+      replicas: 3
+      placement:
+        constraints:
+          - node.role == worker
     networks:
       back_net:
         aliases:
           - reddit_comment
-
-  prometheus:
-    image: ${USERNAME}/prometheus
-    ports:
-      - '9090:9090'
-    networks:
-      - back_net
-      - front_net
-
-  node-exporter:
-    image: prom/node-exporter:v0.15.0
-    user: root
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
-    networks:
-      back_net:
-        aliases:
-          - node-exporter
-
-  cadvisor:
-    image: google/cadvisor:latest
-    volumes:
-      - '/:/rootfs:ro'
-      - '/var/run:/var/run:rw'
-      - '/sys:/sys:ro'
-      - '/var/lib/docker/:/var/lib/docker:ro'
-    ports:
-      - '8080:8080'
-    networks:
-      back_net:
-        aliases:
-          - cadvisor
-
-  grafana:
-    image: grafana/grafana
-    volumes:
-      - grafana_data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=secret
-    depends_on:
-      - prometheus
-    ports:
-      - 3000:3000
-    networks:
-      back_net:
-        aliases:
-          - grafana
-
-  alertmanager:
-    image: ${USER_NAME}/alertmanager
-    command:
-      - '-config.file=/etc/alertmanager/config.yml'
-    ports:
-      - 9093:9093
-    networks:
-      back_net:
-        aliases:
-          - alertmanager
 
 volumes:
   grafana_data:

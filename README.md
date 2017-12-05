@@ -88,7 +88,8 @@ docker run -d --network=reddit -p 9292:9292 --env POST_SERVICE_HOST=reddit_post 
  #### Docker-compose
  Позволяет создавать docker-контейнере на основе описания.
  Описание инфраструктуры помещается в файл _docker-compose.yml_.
- В самом файле допускается применение переменных окружения _{VARIABLE}_
+
+  В самом файле допускается применение переменных окружения _{VARIABLE}_
 
 ## Системы мониторинга. Prometheus.
 
@@ -285,3 +286,110 @@ alerting:
 [comment](https://hub.docker.com/r/temox/comment/)<br/>
 [post](https://hub.docker.com/r/temox/comment/)<br/>
 [prometheus](https://hub.docker.com/r/temox/comment/)<br/>
+
+## Docker Swarm
+
+Кластер Docker Swarm состоит из **master-нод** и управляемых ими **worker-нод**:
+![Docker swarm](https://docs.docker.com/engine/swarm/images/swarm-diagram.png)
+
+### Инициализация. Добавление узлов кластера.
+`docker swarm init`<br/>
+
+Получение токена:<br/>
+`docker swarm join-token manager/worker`<br/>
+
+Полученный токен запускается на остальных узлах для добавления их в кластер.
+
+### Docker swarm stack
+Stack - группа сервисов и их хависимостей. Описываются в формате **docker-compose**.
+
+Управление стэком:<br/>
+`docker stack deploy/rm/services/ls STACK_NAME`<br/>
+
+Деплой стэка с использованием _docker-compose.yml_:<br/>
+`docker stack deploy --compose-file=<(docker-compose -f dockercompose.yml config 2>/dev/null) STACK_NAME`<br/>
+
+### Labels. Размещение сервисов.
+Ограничения размещения определяются значеинями **label'ов** и **docker-engine'ов**
+```
+- node.labels.reliability == high
+- node.role != manager
+- engine.labels.provider == google
+```
+
+Добавление **label'ов** к нодам:<br/>
+`docker node update --label-add reliability=high NODE_NAME`<br/>
+
+Просмотр информации:<br/>
+`docker node ls -q | xargs docker node inspect -f '{{ .ID }} [{{ .Description.Hostname }}]: {{ .Spec.Labels }}'`<br/>
+
+Размещение сервисов:
+```
+deploy:
+ placement:
+ constraints:
+```
+По label'ам:<br/>
+`- node.labels.reliability == high`<br/>
+По узлам:<br/>
+`- node.role == worker`<br/>
+
+### Масштабирование сервисов
+
+**Replicated** - запуск определенного количества задач (_replicas_)
+  ```
+  deploy:
+  mode: replicated
+  replicas: 2
+  ```
+  Масштабирование "на лету":
+    ```
+    $ docker service scale DEV_ui=3
+      or
+    $ docker service update --replicas 3 DEV_ui
+    ```
+  Выключение всех задач:<br/>
+    `docker service update --replicas 0 DEV_ui`<br/>
+
+**Global** - запуск по одной задаче, на каждой ноде
+
+### Rolling update
+
+Для минимизации простоя и определения плана отката, используется **update_config**
+```
+deploy:
+ update_config:
+ parallelism: 2
+ delay: 5s
+ failure_action: rollback
+ monitor: 5s
+ max_failure_ratio: 2
+ order: start-first
+```
+  - _parallelism_ - cколько контейнеров (группу) обновить одновременно?
+  - _delay_ - задержка между обновлениями групп контейнеров
+  - _order_ - порядок обновлений (сначала убиваем старые и запускаем новые или наоборот) (только в compose 3.4)
+  - _monitor_ - сколько следить за обновлением, пока не признать его удачным или ошибочным
+  - _max_failure_ratio_ - сколько раз обновление может пройти с ошибкой перед тем, как перейти к _failure_action_
+  - _failure_action_ - что делать, если при обновлении возникла ошибка
+    - _rollback_ - откатить все задачи на предыдущую версию
+    - _pause_ (default) - приостановить обновление
+    - _continue_ - продолжить обновление
+
+### Ограничение ресурсов
+```
+deploy:
+ resources:
+ limits:
+ cpus: ‘0.25’ - 25% процессорного времени
+ memory: 150M - 105Мб ОЗУ
+```
+
+### Политика перезапуска контейнеров
+```
+ deploy:
+   restart_policy:
+     condition: on-failure
+     max_attempts: 3
+     delay: 3s
+```
