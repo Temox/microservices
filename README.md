@@ -125,6 +125,167 @@ Exporter - интерфейс для конвертации метрик в фо
 Для сбора статистики с docker-хоста используется node-exporter. Запускается отдельным контейнером _node-exporter_.
 В конфигурацию _Prometheus_ добавляется дополнительный джоб _node_.
 
+Конткйнеры опубликованы в docker-hub:<br/>
+[temox/ui](https://hub.docker.com/r/temox/ui/)<br/>
+[temox/comment](https://hub.docker.com/r/temox/comment/)<br/>
+[temox/post](https://hub.docker.com/r/temox/post/)<br/>
+[temox/prometheus](https://hub.docker.com/r/temox/prometheus/)<br/>
+
+
+## Мониторинг контейнеров и инфраструктуры
+### cAdvisor
+[cAdvisor](https://github.com/google/cadvisor) собирает инфорацию о ресурсах и потребляемых контейнерами CPU, RAM, Network и др.
+
+docker-compose.yml
+```
+  cadvisor:
+    image: google/cadvisor:latest
+    volumes:
+      - '/:/rootfs:ro'
+      - '/var/run:/var/run:rw'
+      - '/sys:/sys:ro'
+      - '/var/lib/docker/:/var/lib/docker:ro'
+    ports:
+      - '8080:8080'
+    networks:
+      back_net:
+        aliases:
+          - cadvisor
+```
+prometheus.yml
+```
+- job_name: 'cadvisor'
+ static_configs:
+ - targets:
+ - 'cadvisor:8080'
+
+```
+
+### Визуализация метрик. Grafana.
+
+docker-compose.yml
+```
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=secret
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+    networks:
+      back_net:
+        aliases:
+          - grafana
+          
+  volumes:
+    grafana_data:
+```
+
+_Garafana_ позволяет подгружать дашборды из .json файлов:
+```
+ dashboards/
+  ├── Business_Logic_Monitoring.json
+  ├── DockerMonitoring.json
+  └── ui_service_monitoring.json
+```
+
+[Встроенные функции _Grafana_](https://prometheus.io/docs/prometheus/latest/querying/functions/) позволяют производить различные операции над получаемыми из _Prometheus_ метриками.
+Также, _Prometheus_ позволяет предоставлять метрики различных [типов](https://prometheus.io/docs/concepts/metric_types/)
+
+### Алертинг. Alretmanager.
+
+*Alertmanager* - дополнительный компонент для системы мониторинга Прометей, который отвечает за первичную обработку алертов и дальнейшую отправку оповещений по заданному назначению.
+
+docker-compose.yml
+```
+  alertmanager:
+    image: ${USER_NAME}/alertmanager
+    command:
+      - '-config.file=/etc/alertmanager/config.yml'
+    ports:
+      - 9093:9093
+    networks:
+      back_net:
+        aliases:
+          - alertmanager
+```
+
+Настройки _Alertmanager_ передаются через yaml-файл:
+```
+  alertmanager/
+   ├── config.yml
+   └── Dockerfile
+```
+
+Dockerfile
+```
+FROM prom/alertmanager
+ADD config.yml /etc/alertmanager/
+```
+
+config.yml
+```
+global:
+  slack_api_url: 'https://hooks.slack.com/services/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'
+
+route:
+  receiver: 'slack-notifications'
+
+receivers:
+- name: 'slack-notifications'
+  slack_configs:
+  - channel: '#temox1'
+```
+
+### Alert rules (Prometheus v2.x)
+
+Правила описываются в виде yaml-файлов и добавляются в конфиг _Prometheus_:
+ 
+alert.rules
+```
+groups:
+- name: alrets
+  interval: 5s
+  rules:
+  - alert: InstanceDown
+    expr: up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      description : "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."
+      summary: "Instance {{ $labels.instance }} down"
+```
+
+Dockerfile
+```
+...
+ADD alert.rules /etc/prometheus/
+```
+
+prometheus.yml
+```
+rule_files:
+  - "alert.rules"
+
+alerting:
+  alertmanagers:
+  - scheme: http
+    static_configs:
+    - targets:
+      - "alertmanager:9093"
+```
+
+Обновленные образы в docker.hub:<br/>
+[ui](https://hub.docker.com/r/temox/ui/) <br/>
+[comment](https://hub.docker.com/r/temox/comment/)<br/>
+[post](https://hub.docker.com/r/temox/comment/)<br/>
+[prometheus](https://hub.docker.com/r/temox/comment/)<br/>
+=======
 Конткйнеры опубликованы в docker-hub:
 
 [temox/ui](https://hub.docker.com/r/temox/ui/)
