@@ -285,13 +285,3 @@ alerting:
 [comment](https://hub.docker.com/r/temox/comment/)<br/>
 [post](https://hub.docker.com/r/temox/comment/)<br/>
 [prometheus](https://hub.docker.com/r/temox/comment/)<br/>
-=======
-Конткйнеры опубликованы в docker-hub:
-
-[temox/ui](https://hub.docker.com/r/temox/ui/)
-
-[temox/comment](https://hub.docker.com/r/temox/comment/)
-
-[temox/post](https://hub.docker.com/r/temox/post/)
-
-[temox/prometheus](https://hub.docker.com/r/temox/prometheus/)
